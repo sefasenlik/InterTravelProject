@@ -276,6 +276,61 @@ Authorization: Bearer <your_token>
       pm.response.to.have.status(403);
   });
   ```
+  
+## PostgreSQL Queries
+
+To interact with the database directly, you can use `psql` command-line tool or any PostgreSQL client (e.g., pgAdmin, DBeaver).
+
+### Connect to Database
+```bash
+psql -h localhost -p 5432 -U your_username -d scan_records_db
+```
+
+### Basic Queries
+
+1. View all scan records:
+```sql
+SELECT * FROM "ScanRecords" ORDER BY "createdAt" DESC;
+```
+
+2. Find specific scan record by ID:
+```sql
+SELECT * FROM "ScanRecords" WHERE id = 'your-uuid-here';
+```
+
+3. Get records from a specific date:
+```sql
+SELECT * FROM "ScanRecords" 
+WHERE DATE("createdAt") = '2024-02-17';
+```
+
+4. Count records by scan type:
+```sql
+SELECT "scanData"->>'type' as scan_type, COUNT(*) 
+FROM "ScanRecords" 
+GROUP BY "scanData"->>'type';
+```
+
+5. Find records by location:
+```sql
+SELECT * FROM "ScanRecords" 
+WHERE "scanData"->>'location' = 'Warehouse A';
+```
+
+6. Get latest 10 records:
+```sql
+SELECT * FROM "ScanRecords" 
+ORDER BY "createdAt" DESC 
+LIMIT 10;
+```
+
+7. Get failed scans:
+```sql
+SELECT * FROM "ScanRecords" 
+WHERE status = 'failed';
+```
+
+Note: Replace `your_username` with your actual PostgreSQL username when connecting to the database.
 
 ### Environment Setup Guide
 
