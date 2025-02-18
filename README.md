@@ -83,30 +83,216 @@ Authorization: Bearer <your_token>
 
 ## Testing Scenarios
 
-### 1. Authentication Testing
-```bash
-# Login with valid credentials
-curl -X POST http://localhost:3000/api/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "password"}'
+### Postman Collection Setup
 
-# Access protected route with token
-curl -X GET http://localhost:3000/api/scan-records \
-  -H "Authorization: Bearer <your_token>"
-```
+1. Create a new Postman Collection named "Scan Records API"
+2. Set up a Collection Variable:
+   - Click on the collection
+   - Go to Variables tab
+   - Add a variable named `base_url` with initial value `http://localhost:3000`
+   - Add a variable named `token` (this will store the JWT token)
+
+### 1. Authentication Testing
+
+#### Login Request
+- Method: `POST`
+- URL: `{{base_url}}/api/login`
+- Headers:
+  ```
+  Content-Type: application/json
+  ```
+- Body (raw JSON):
+  ```json
+  {
+    "username": "admin",
+    "password": "password"
+  }
+  ```
+- Tests (Add in Tests tab):
+  ```javascript
+  // Save the token
+  if (pm.response.code === 200) {
+      pm.collectionVariables.set("token", pm.response.json().token);
+  }
+  
+  // Test response
+  pm.test("Status code is 200", function () {
+      pm.response.to.have.status(200);
+  });
+  
+  pm.test("Response has token", function () {
+      pm.expect(pm.response.json()).to.have.property('token');
+  });
+  ```
 
 ### 2. Scan Records Operations
-```bash
-# Create a new scan record
-curl -X POST http://localhost:3000/api/scan-records \
-  -H "Authorization: Bearer <your_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"scanData": {"type": "barcode", "value": "123456789"}}'
 
-# Retrieve scan records
-curl -X GET http://localhost:3000/api/scan-records \
-  -H "Authorization: Bearer <your_token>"
-```
+#### Create Scan Record
+- Method: `POST`
+- URL: `{{base_url}}/api/scan-records`
+- Headers:
+  ```
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+  ```
+- Body (raw JSON):
+  ```json
+  {
+    "scanData": {
+      "type": "barcode",
+      "value": "123456789",
+      "timestamp": "2024-02-17T12:00:00Z",
+      "location": "Warehouse A"
+    }
+  }
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 201", function () {
+      pm.response.to.have.status(201);
+  });
+  
+  pm.test("Record created successfully", function () {
+      pm.expect(pm.response.json()).to.have.property('id');
+      pm.expect(pm.response.json().scanData.value).to.eql("123456789");
+  });
+  ```
+
+#### Get All Scan Records
+- Method: `GET`
+- URL: `{{base_url}}/api/scan-records`
+- Headers:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 200", function () {
+      pm.response.to.have.status(200);
+  });
+  
+  pm.test("Response is an array", function () {
+      pm.expect(pm.response.json()).to.be.an('array');
+  });
+  ```
+
+#### Get Single Scan Record
+- Method: `GET`
+- URL: `{{base_url}}/api/scan-records/:id`
+- Headers:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 200", function () {
+      pm.response.to.have.status(200);
+  });
+  
+  pm.test("Record has correct structure", function () {
+      pm.expect(pm.response.json()).to.have.property('scanData');
+      pm.expect(pm.response.json().scanData).to.have.property('type');
+      pm.expect(pm.response.json().scanData).to.have.property('value');
+  });
+  ```
+
+#### Update Scan Record
+- Method: `PUT`
+- URL: `{{base_url}}/api/scan-records/:id`
+- Headers:
+  ```
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+  ```
+- Body (raw JSON):
+  ```json
+  {
+    "scanData": {
+      "type": "barcode",
+      "value": "987654321",
+      "timestamp": "2024-02-17T13:00:00Z",
+      "location": "Warehouse B"
+    }
+  }
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 200", function () {
+      pm.response.to.have.status(200);
+  });
+  
+  pm.test("Record updated successfully", function () {
+      pm.expect(pm.response.json().scanData.value).to.eql("987654321");
+  });
+  ```
+
+#### Delete Scan Record
+- Method: `DELETE`
+- URL: `{{base_url}}/api/scan-records/:id`
+- Headers:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 200", function () {
+      pm.response.to.have.status(200);
+  });
+  
+  pm.test("Deletion confirmation message", function () {
+      pm.expect(pm.response.json()).to.have.property('message');
+  });
+  ```
+
+### Error Testing Scenarios
+
+#### Invalid Authentication
+- Method: `POST`
+- URL: `{{base_url}}/api/login`
+- Body (raw JSON):
+  ```json
+  {
+    "username": "invalid",
+    "password": "wrong"
+  }
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 401", function () {
+      pm.response.to.have.status(401);
+  });
+  ```
+
+#### Invalid Token Access
+- Method: `GET`
+- URL: `{{base_url}}/api/scan-records`
+- Headers:
+  ```
+  Authorization: Bearer invalid_token
+  ```
+- Tests:
+  ```javascript
+  pm.test("Status code is 403", function () {
+      pm.response.to.have.status(403);
+  });
+  ```
+
+### Environment Setup Guide
+
+1. Import the collection into Postman
+2. Create environments for different setups:
+   - Development:
+     - `base_url`: `http://localhost:3000`
+   - Staging:
+     - `base_url`: `https://staging-api.example.com`
+   - Production:
+     - `base_url`: `https://api.example.com`
+
+3. Run the collection:
+   - Use Postman's Collection Runner
+   - Select the environment
+   - Run tests in sequence (Authentication first)
+   - View the test results in the Postman console
 
 ## Error Handling
 
