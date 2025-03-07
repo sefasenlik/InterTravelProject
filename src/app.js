@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const scanRecordsRoutes = require('./routes/scanRecordsRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const { authenticateToken } = require('./middlewares/authMiddleware');
 const scanRecordsController = require('./controllers/scanRecordsController');
@@ -26,6 +27,7 @@ testConnection();
 
 // Routes
 app.use('/api/scan-records', scanRecordsRoutes);
+app.use('/api/upload', authenticateToken, uploadRoutes); // Protected upload routes
 
 // Public routes (no authentication required)
 app.post('/api/login', scanRecordsController.login);
